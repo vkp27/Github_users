@@ -19,9 +19,33 @@ const GithubProvider = ({children}) => {
     const [followers, setFollowers] = useState(mockFollowers);
     //request loading
     const [requests, setRequests] = useState(0)
-    const [loading, setLoading] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
     //error
     const [error, setError] = useState({show: false,msg: ''})
+
+    const searchGithubUser = async (user) => {
+        //we invoke this function to remove the error msg.
+        toggleError()
+        setIsLoading(true)
+        //to fetch the ajax request when we search for a user we use axios.
+        const response = await axios(`${rootUrl}/users/${user}`).catch((err) => console.log(err))
+       
+        if(response) {
+            setGithubUser(response.data)
+            const {login, followers_url} = response.data
+            //repos url setup
+            axios(`${rootUrl}/users/${login}/repos?per_page=100`).then((response) => setRepos(response.data))
+
+            //followers url setup
+            axios(`${followers_url}?per_page=100`).then((response) => setFollowers(response.data))
+            //more logic
+        }
+        else {
+            toggleError(true,'there is no user with that username')
+        }
+        checkRequests();
+        setIsLoading(false);
+    }
     // check rate/requests
     const checkRequests = () => {
         //in place of fetch to get data we use axios.
@@ -45,7 +69,7 @@ const GithubProvider = ({children}) => {
     //here once our app loads we use checkrequest as a callback function.
     useEffect(checkRequests,[])
     return (
-        <GithubContext.Provider value={{githubUser, repos, followers, requests, error}}>
+        <GithubContext.Provider value={{githubUser, repos, followers, requests, error, searchGithubUser,isLoading,}}>
             {children}
         </GithubContext.Provider>
     );
